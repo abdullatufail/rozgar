@@ -15,6 +15,7 @@ import { PageTransition } from "../components/animations";
 import { ScrollFadeIn } from "../components/animations/ScrollFadeIn";
 import { ScrollSlideIn } from "../components/animations/ScrollSlideIn";
 import Footer from "@/components/common/Footer";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Gig {
   id: number;
@@ -59,7 +60,9 @@ export default function Home() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   useEffect(() => {
     fetchGigs();
   }, []);
@@ -84,6 +87,21 @@ export default function Home() {
 
   const navigateToCategory = (categoryName: string) => {
     window.location.href = `/search/gigs?category=${encodeURIComponent(categoryName)}`;
+  };
+
+  const updateSearchParams = () => {
+    // Create a new URLSearchParams object
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // Update or remove search parameter
+    if (searchQuery) {
+      params.set("search", searchQuery.trim());
+    } else {
+      params.delete("search");
+    }
+    
+    // Navigate to new URL with updated parameters
+    router.push(`/search/gigs?${params.toString()}`);
   };
 
   if (isLoading) {
@@ -131,6 +149,11 @@ export default function Home() {
                       <DropdownMenuItem asChild>
                         <Link href="/dashboard">Dashboard</Link>
                       </DropdownMenuItem>
+                      {user.role === "admin" && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">Admin Dashboard</Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
                     </DropdownMenuContent>
                     </DropdownMenu>
@@ -163,7 +186,14 @@ export default function Home() {
               
               <ScrollSlideIn direction="up" delay={0.3}>
                 <div className="flex justify-center mb-8">
-                  <SearchBar className="w-full max-w-md" />
+                <SearchBar 
+            className="w-full max-w-xl mx-auto" 
+            defaultQuery={searchQuery}
+            onSearch={(query) => {
+              setSearchQuery(query);
+              setTimeout(() => updateSearchParams(), 0);
+            }}
+          />
                 </div>
               </ScrollSlideIn>
             </div>

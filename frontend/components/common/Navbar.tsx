@@ -16,18 +16,12 @@ import { Gig } from "@/lib/validators";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { PRICE_RANGES } from "@/lib/constants";
 
 export function Navbar() {
   const { user } = useAuth();
   
-  const PRICE_RANGES = [
-    { label: "All Prices", min: 0, max: 1000 },
-    { label: "Under $50", min: 0, max: 50 },
-    { label: "$50 to $100", min: 50, max: 100 },
-    { label: "$100 to $200", min: 100, max: 200 },
-    { label: "$200 to $500", min: 200, max: 500 },
-    { label: "$500+", min: 500, max: 1000 }
-  ];
+  
  
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -45,6 +39,7 @@ export function Navbar() {
     ) || 0
   );
   
+
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { logout } = useAuth();
@@ -101,7 +96,7 @@ export function Navbar() {
     updateSearchParams();
   };
 
-  const updateSearchParams = () => {
+ const updateSearchParams = () => {
     // Create a new URLSearchParams object
     const params = new URLSearchParams(searchParams.toString());
     

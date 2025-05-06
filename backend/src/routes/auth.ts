@@ -1,7 +1,7 @@
 import express from "express";
 import { db } from "../db";
 import { users } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -13,7 +13,7 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(["client", "freelancer"]),
+  role: z.enum(["client", "freelancer", "admin"]),
 });
 
 const loginSchema = z.object({
@@ -221,4 +221,61 @@ router.post("/add-balance", auth, async (req, res) => {
   }
 });
 
-export const authRouter = router; 
+// Get all users (admin only)
+router.get("/users", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Get all users
+    const allUsers = await db.query.users.findMany({
+      orderBy: (users, { desc }) => [desc(users.createdAt)],
+    });
+
+    // Remove passwords from response
+    const usersWithoutPasswords = allUsers.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+
+    return res.json(usersWithoutPasswords);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+// Delete user (admin only)
+router.delete("/users/:id", auth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+
+    // Check if user is admin
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Check if trying to delete self
+    if (req.user.id === userId) {
+      return res.status(400).json({ message: "Cannot delete your own account" });
+    }
+
+    // Delete the user
+    const deletedUser = await db.delete(users)
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (deletedUser.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+export default router; 

@@ -13,7 +13,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role", { enum: ["client", "freelancer"] }).notNull(),
+  role: text("role", { enum: ["client", "freelancer", "admin"] }).notNull(),
   balance: numericAsNumber("balance", { precision: 10, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -143,6 +143,15 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold">Dashboard</h1>
         </SlideIn>
         <div className="flex space-x-4">
+          {user.role === "admin" && (
+            <SlideIn direction="right">
+              <Link href="/admin">
+                <Button variant="outline">
+                  Admin Dashboard
+                </Button>
+              </Link>
+            </SlideIn>
+          )}
           {user.role === "freelancer" && (
             <>
               <SlideIn direction="right">
