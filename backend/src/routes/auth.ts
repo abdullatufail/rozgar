@@ -278,4 +278,4 @@ router.delete("/users/:id", auth, async (req, res) => {
   }
 });
 
-export default router; 
+export const authRouter = router; 
