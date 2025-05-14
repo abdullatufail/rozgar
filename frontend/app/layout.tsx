@@ -24,7 +24,7 @@ export default function RootLayout({
         <Suspense fallback={<div>Loading...</div>}>
           <AuthProvider>
             
-            <main className="container mx-auto px-4 py-8">{children}</main>
+            <main className="">{children}</main>
             <Toaster />
           </AuthProvider>
         </Suspense>

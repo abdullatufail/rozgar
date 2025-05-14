@@ -4,8 +4,9 @@ const numericAsNumber = customType({
   dataType() {
     return "numeric";
   },
-  fromDriver(value: string | null): number | null {
-    return value === null ? null : parseFloat(value);
+  fromDriver(value: unknown): number | null {
+    if (value === null) return null;
+    return typeof value === 'string' ? parseFloat(value) : null;
   },
 });
 export const users = pgTable("users", {
@@ -50,17 +51,9 @@ export const orders = pgTable("orders", {
   deliveryNotes: text("delivery_notes"),
   cancellationReason: text("cancellation_reason"),
   cancellationApproved: boolean("cancellation_approved"),
+  cancellationRequestedBy: integer("cancellation_requested_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").references(() => orders.id).notNull(),
-  senderId: integer("sender_id").references(() => users.id).notNull(),
-  content: text("content").notNull(),
-  isRead: boolean("is_read").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const reviews = pgTable("reviews", {
@@ -76,7 +69,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   gigs: many(gigs),
   clientOrders: many(orders, { relationName: "client" }),
   freelancerOrders: many(orders, { relationName: "freelancer" }),
-  messages: many(messages),
 }));
 
 export const gigsRelations = relations(gigs, ({ one, many }) => ({
@@ -101,19 +93,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     fields: [orders.freelancerId],
     references: [users.id],
   }),
-  messages: many(messages),
   review: one(reviews),
-}));
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  order: one(orders, {
-    fields: [messages.orderId],
-    references: [orders.id],
-  }),
-  sender: one(users, {
-    fields: [messages.senderId],
-    references: [users.id],
-  }),
 }));
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({

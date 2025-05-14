@@ -5,7 +5,8 @@ import { authRouter } from "./routes/auth";
 import { gigsRouter } from "./routes/gigs";
 import { ordersRouter } from "./routes/orders";
 import { reviewsRouter } from "./routes/reviews";
-import { messagesRouter } from "./routes/messages";
+import { setupTriggers } from "./db/triggers";
+import { startCronJobs } from "./cron";
 
 dotenv.config();
 
@@ -25,7 +26,6 @@ app.use("/api/auth", authRouter);
 app.use("/api/gigs", gigsRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/reviews", reviewsRouter);
-app.use("/api/messages", messagesRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -34,6 +34,14 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 const PORT = process.env.PORT || 3001;
+
+// Initialize database triggers
+setupTriggers().catch(error => {
+  console.error("Failed to setup database triggers:", error);
+});
+
+// Start cron jobs
+startCronJobs();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

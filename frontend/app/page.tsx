@@ -201,7 +201,7 @@ export default function Home() {
 
           {/* Why clients prefer rozgaar */}
           <ScrollFadeIn delay={0.2}>
-            <section className="bg-black text-white px-10 py-16 md:py-24 rounded-xl">
+            <section className="bg-black text-white px-10 py-16 md:py-24 rounded-xl mx-10">
               <div className="container mx-auto px-4">
                 <div className="flex flex-col md:flex-row md:items-center mb-12 md:mb-16">
                   <h2 className="text-4xl md:text-5xl font-bold mb-6 md:mb-0 md:w-1/2">

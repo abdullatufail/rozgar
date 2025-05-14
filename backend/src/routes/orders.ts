@@ -7,6 +7,7 @@ import { auth, isClient } from "../middleware/auth";
 import { Request } from "express";
 import multer from "multer";
 import path from "path";
+import { checkAndUpdateLateOrders } from "../services/orderService";
 
 const router = Router();
 const upload = multer({ 
@@ -21,42 +22,7 @@ const orderSchema = z.object({
   requirements: z.string().min(1),
 });
 
-// Utility function to check and update late orders
-const checkAndUpdateLateOrders = async () => {
-  try {
-    const currentDate = new Date();
-    
-    // Find orders that are past due date but not yet marked as late
-    const ordersToUpdate = await db.query.orders.findMany({
-      where: (orders, { and, eq, lt, ne }) => 
-        and(
-          eq(orders.isLate, false),
-          lt(orders.dueDate!, currentDate),
-          ne(orders.status, "completed"),
-          ne(orders.status, "cancelled")
-        )
-    });
-    
-    console.log(`Found ${ordersToUpdate.length} orders that are now late`);
-    
-    // Update each order to mark it as late
-    for (const order of ordersToUpdate) {
-      await db
-        .update(orders)
-        .set({
-          isLate: true,
-          status: order.status === "in_progress" ? "late" : order.status,
-        })
-        .where(eq(orders.id, order.id));
-      
-      console.log(`Order #${order.id} marked as late`);
-    }
-  } catch (error) {
-    console.error("Error checking for late orders:", error);
-  }
-};
-
-// Run the check every time the orders routes are accessed
+// Run the check on each request (will be removed once cron job is in place)
 router.use(async (req, res, next) => {
   await checkAndUpdateLateOrders();
   next();
@@ -589,6 +555,7 @@ router.post("/:id/cancel", auth, async (req, res) => {
       .set({
         status: "cancellation_requested",
         cancellationReason: reason,
+        cancellationRequestedBy: req.user!.id
       })
       .where(eq(orders.id, order.id))
       .returning();
@@ -654,6 +621,49 @@ router.post("/:id/approve-cancellation", auth, async (req, res) => {
     res.json(updatedOrder);
   } catch (error) {
     console.error("Error approving cancellation:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+// Reject cancellation - Revert to in_progress status
+router.post("/:id/reject-cancellation", auth, async (req, res) => {
+  try {
+    // Get the order
+    const order = await db.query.orders.findFirst({
+      where: and(
+        eq(orders.id, parseInt(req.params.id)),
+        or(
+          eq(orders.clientId, req.user!.id),
+          eq(orders.freelancerId, req.user!.id)
+        )
+      ),
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Update order status back to in_progress
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        status: "in_progress",
+        cancellationApproved: false,
+      })
+      .where(
+        and(
+          eq(orders.id, parseInt(req.params.id)),
+          or(
+            eq(orders.clientId, req.user!.id),
+            eq(orders.freelancerId, req.user!.id)
+          )
+        )
+      )
+      .returning();
+
+    res.json(updatedOrder);
+  } catch (error) {
+    console.error("Error rejecting cancellation:", error);
     res.status(500).json({ message: "Something went wrong" });
   }
 });

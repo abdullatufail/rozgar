@@ -23,6 +23,7 @@ export interface Order {
   deliveryNotes?: string;
   cancellationReason?: string;
   cancellationApproved?: boolean;
+  cancellationRequestedBy?: number;
   createdAt: string;
   updatedAt: string;
   review?: Review;
@@ -38,15 +39,6 @@ export interface Order {
     name: string;
     id: number;
   };
-}
-
-export interface Message {
-  id: number;
-  orderId: number;
-  senderId: number;
-  content: string;
-  createdAt: string;
-  isRead: boolean;
 }
 
 export interface Balance {
@@ -143,12 +135,6 @@ export const orderService = {
 
   addReview: async (orderId: number, rating: number, comment?: string) => {
     return api.post<Review, { rating: number; comment?: string }>(`/orders/${orderId}/review`, { rating, comment });
-  },
-
-  addMessage: async (orderId: number, content: string): Promise<Message> => {
-    return api.post<Message, { content: string }>(`/orders/${orderId}/messages`, {
-      content,
-    });
   },
 
   getBalance: async (): Promise<Balance> => {

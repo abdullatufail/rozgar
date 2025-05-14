@@ -154,7 +154,7 @@ export function Navbar() {
           </Link>
           <div className="mb-8">
           <SearchBar 
-            className="w-full max-w-xl mx-auto" 
+            className="w-full max-w-xl mx-auto mt-10" 
             defaultQuery={searchQuery}
             onSearch={(query) => {
               setSearchQuery(query);

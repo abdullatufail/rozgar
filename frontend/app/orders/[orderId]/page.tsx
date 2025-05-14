@@ -452,7 +452,7 @@ export default function OrderPage() {
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm text-gray-500">Gig Title</p>
-                        <p className="font-medium">{order.gig.title}</p>
+                        <p className="font-medium">{order.gig?order.gig.title:"Deleted Gig"}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Price</p>
@@ -564,9 +564,60 @@ export default function OrderPage() {
                       Cancellation Request
                     </h3>
                     <div className="bg-orange-50 p-4 rounded-md">
-                      <p className="text-sm text-gray-500 mb-2">Reason for Cancellation</p>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {order.cancellationRequestedBy === order.freelancerId 
+                          ? "Freelancer requested cancellation" 
+                          : "Client requested cancellation"}
+                      </p>
+                      <p className="text-sm text-gray-500 mb-2">Reason for Cancellation:</p>
                       <p className="whitespace-pre-line">{order.cancellationReason}</p>
                     </div>
+                  </div>
+                )}
+
+                {/* Show approval buttons to client if freelancer requested cancellation */}
+                {user?.id === order.clientId && 
+                  order.status === "cancellation_requested" && 
+                  order.cancellationRequestedBy === order.freelancerId && (
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={handleApproveCancellation}
+                      variant="destructive"
+                      className="w-full"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Approve Cancellation
+                    </Button>
+                    <Button 
+                      onClick={handleRejectCancellation}
+                      className="w-full"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject Cancellation
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Show approval buttons to freelancer if client requested cancellation */}
+                {user?.id === order.freelancerId && 
+                  order.status === "cancellation_requested" && 
+                  order.cancellationRequestedBy === order.clientId && (
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={handleApproveCancellation}
+                      variant="destructive"
+                      className="w-full"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Approve Cancellation
+                    </Button>
+                    <Button 
+                      onClick={handleRejectCancellation}
+                      className="w-full"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject Cancellation
+                    </Button>
                   </div>
                 )}
 
@@ -596,6 +647,82 @@ export default function OrderPage() {
                       )}
                     </div>
                   </div>
+                )}
+
+                {/* Show approval buttons to freelancer if client requested cancellation */}
+                {user?.id === order.freelancerId && 
+                  order.status === "cancellation_requested" && 
+                  order.cancellationRequestedBy === order.clientId && (
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={handleApproveCancellation}
+                      variant="destructive"
+                      className="w-full"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Approve Cancellation
+                    </Button>
+                    <Button 
+                      onClick={handleRejectCancellation}
+                      className="w-full"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject Cancellation
+                    </Button>
+                  </div>
+                )}
+                
+                {user?.id === order.clientId && order.status === "completed" && !order.review && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="w-full">
+                        <Star className="mr-2 h-4 w-4" />
+                        Add Review
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Rate Your Experience</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Your Rating</label>
+                          <div className="flex items-center gap-2 mb-4">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setRating(star)}
+                                className="focus:outline-none transition-transform hover:scale-110"
+                              >
+                                <Star 
+                                  filled={star <= rating} 
+                                  className={`h-8 w-8 ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Your Review (Optional)</label>
+                          <Textarea
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="Share your experience working with this freelancer..."
+                            rows={4}
+                          />
+                        </div>
+                        <Button
+                          onClick={handleAddReview}
+                          disabled={isReviewing}
+                          className="w-full"
+                        >
+                          {isReviewing ? <Spinner className="mr-2" /> : null}
+                          Submit Review
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
             </div>
@@ -715,79 +842,6 @@ export default function OrderPage() {
                         >
                           {isCancelling ? <Spinner className="mr-2" /> : null}
                           Submit Request
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-                
-                {user?.id === order.freelancerId && order.status === "cancellation_requested" && (
-                  <div className="space-y-3">
-                    <Button 
-                      onClick={handleApproveCancellation}
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Approve Cancellation
-                    </Button>
-                    <Button 
-                      onClick={handleRejectCancellation}
-                      className="w-full"
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Reject Cancellation
-                    </Button>
-                  </div>
-                )}
-                
-                {user?.id === order.clientId && order.status === "completed" && !order.review && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="w-full">
-                        <Star className="mr-2 h-4 w-4" />
-                        Add Review
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Rate Your Experience</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Your Rating</label>
-                          <div className="flex items-center gap-2 mb-4">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() => setRating(star)}
-                                className="focus:outline-none transition-transform hover:scale-110"
-                              >
-                                <Star 
-                                  filled={star <= rating} 
-                                  className={`h-8 w-8 ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Your Review (Optional)</label>
-                          <Textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            placeholder="Share your experience working with this freelancer..."
-                            rows={4}
-                          />
-                        </div>
-                        <Button
-                          onClick={handleAddReview}
-                          disabled={isReviewing}
-                          className="w-full"
-                        >
-                          {isReviewing ? <Spinner className="mr-2" /> : null}
-                          Submit Review
                         </Button>
                       </div>
                     </DialogContent>
