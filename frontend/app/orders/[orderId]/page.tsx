@@ -33,6 +33,8 @@ import {
   Timer
 } from "lucide-react";
 import Footer from "@/components/common/Footer";
+import CancellationRequest from "./components/CancellationRequest";
+import ActionButtons from "./components/ActionButtons";
 
 const CountdownTimer = ({ dueDate }: { dueDate: string }) => {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number }>({
@@ -122,8 +124,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/login");
-      return;
+      return; // Will be handled in the rendering logic
     }
     fetchOrder();
   }, [user, orderId, router]);
@@ -135,6 +136,13 @@ export default function OrderPage() {
     } catch (error: unknown) {
       const apiError = error as ApiError;
       console.error("Error fetching order:", apiError);
+      
+      // If unauthorized, redirect to login
+      if (apiError.status === 401) {
+        router.push("/login");
+        return;
+      }
+      
       toast({
         title: "Error",
         description: apiError.message || "Failed to fetch order details",
@@ -390,11 +398,37 @@ export default function OrderPage() {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+  
+  // Create cancellation request if exists
+  const createCancellationRequestData = (order: Order) => {
+    if (order.status !== "cancellation_requested") return null;
+    
+    return {
+      id: String(order.id),
+      reason: order.cancellationReason || "No reason provided",
+      status: "pending",
+      createdAt: order.updatedAt || order.createdAt,
+      requestedBy: {
+        id: String(order.cancellationRequestedBy === order.freelancerId ? order.freelancerId : order.clientId),
+        name: order.cancellationRequestedBy === order.freelancerId ? "Seller" : "Client"
+      }
+    };
+  }
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Spinner />
+      </div>
+    );
+  }
+
+  if (!user) {
+    // If user is not authenticated, show a message and a login button
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h1 className="text-2xl font-bold mb-4">Please login to view your orders</h1>
+        <Button onClick={() => router.push("/login")}>Go to Login</Button>
       </div>
     );
   }
@@ -558,21 +592,13 @@ export default function OrderPage() {
 
                 {/* Cancellation Request */}
                 {order.status === "cancellation_requested" && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-4 border-b pb-2 flex items-center">
-                      <AlertTriangle className="mr-2 h-5 w-5 text-orange-500" />
-                      Cancellation Request
-                    </h3>
-                    <div className="bg-orange-50 p-4 rounded-md">
-                      <p className="text-sm text-gray-500 mb-2">
-                        {order.cancellationRequestedBy === order.freelancerId 
-                          ? "Freelancer requested cancellation" 
-                          : "Client requested cancellation"}
-                      </p>
-                      <p className="text-sm text-gray-500 mb-2">Reason for Cancellation:</p>
-                      <p className="whitespace-pre-line">{order.cancellationReason}</p>
-                    </div>
-                  </div>
+                  <CancellationRequest
+                    cancellationRequest={createCancellationRequestData(order)!}
+                    isClient={user!.id === order.clientId}
+                    isFreelancer={user!.id === order.freelancerId}
+                    onApproveCancellation={handleApproveCancellation}
+                    onRejectCancellation={handleRejectCancellation}
+                  />
                 )}
 
                 {/* Show approval buttons to client if freelancer requested cancellation */}
@@ -671,59 +697,6 @@ export default function OrderPage() {
                     </Button>
                   </div>
                 )}
-                
-                {user?.id === order.clientId && order.status === "completed" && !order.review && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="w-full">
-                        <Star className="mr-2 h-4 w-4" />
-                        Add Review
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Rate Your Experience</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Your Rating</label>
-                          <div className="flex items-center gap-2 mb-4">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() => setRating(star)}
-                                className="focus:outline-none transition-transform hover:scale-110"
-                              >
-                                <Star 
-                                  filled={star <= rating} 
-                                  className={`h-8 w-8 ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Your Review (Optional)</label>
-                          <Textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            placeholder="Share your experience working with this freelancer..."
-                            rows={4}
-                          />
-                        </div>
-                        <Button
-                          onClick={handleAddReview}
-                          disabled={isReviewing}
-                          className="w-full"
-                        >
-                          {isReviewing ? <Spinner className="mr-2" /> : null}
-                          Submit Review
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
               </div>
             </div>
           </SlideIn>
@@ -792,6 +765,7 @@ export default function OrderPage() {
                   </Dialog>
                 )}
                 
+                {/* Client delivery approval buttons */}
                 {user?.id === order.clientId && order.status === "delivered" && (
                   <div className="space-y-3">
                     <Button 
@@ -812,7 +786,8 @@ export default function OrderPage() {
                   </div>
                 )}
                 
-                {order.status === "in_progress" && (
+                {/* Cancellation request button */}
+                {["pending", "in_progress"].includes(order.status) && (
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50">

@@ -56,7 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { user } = await authService.login(email, password);
       setUser(user);
+      
+      // Redirect to dashboard only on explicit login action
       router.push("/dashboard");
+      
       toast({
         title: "Success",
         description: "You have been logged in successfully.",

@@ -16,6 +16,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: ["client", "freelancer", "admin"] }).notNull(),
   balance: numericAsNumber("balance", { precision: 10, scale: 2 }).default("0"),
+  avgRating: numericAsNumber("avg_rating", { precision: 3, scale: 1 }).default("0"),
+  totalReviews: integer("total_reviews").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

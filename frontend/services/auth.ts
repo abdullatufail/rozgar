@@ -6,6 +6,8 @@ export interface User {
   email: string;
   role: string;
   balance: number;
+  avgRating?: number;
+  totalReviews?: number;
   createdAt: string;
   updatedAt: string;
 }

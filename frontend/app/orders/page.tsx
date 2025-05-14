@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/auth-context";
 import * as orderService from "../../services/orders";
+import { ApiError } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { useToast } from "../../components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -21,8 +22,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/login");
-      return;
+      return; // Will be handled in the rendering logic
     }
     loadOrders();
   }, [user]);
@@ -35,6 +35,13 @@ export default function OrdersPage() {
       setOrders(ordersData);
     } catch (error) {
       console.error("Error fetching orders:", error);
+      
+      // If unauthorized, redirect to login
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login");
+        return;
+      }
+      
       if (error instanceof Error) {
         console.error("Error details:", {
           message: error.message,
@@ -83,6 +90,21 @@ export default function OrdersPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center space-y-8 text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    // If user is not authenticated, show a message and a login button
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <h2 className="text-xl font-semibold mb-2">Please login to view your orders</h2>
+          <p className="text-muted-foreground mb-6">You need to be logged in to see your orders.</p>
+          <Button onClick={() => router.push('/login')}>
+            Go to Login
+          </Button>
         </div>
       </div>
     );

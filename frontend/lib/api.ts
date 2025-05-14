@@ -39,6 +39,8 @@ export const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Clear the token but don't redirect here
+        // This avoids unwanted redirects in components that handle auth themselves
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; secure";
       }
       
@@ -78,6 +80,8 @@ export const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Clear the token but don't redirect here
+        // This avoids unwanted redirects in components that handle auth themselves
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; secure";
       }
       
@@ -117,6 +121,8 @@ export const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Clear the token but don't redirect here
+        // This avoids unwanted redirects in components that handle auth themselves
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; secure";
       }
       
@@ -155,6 +161,8 @@ export const api = {
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Clear the token but don't redirect here
+        // This avoids unwanted redirects in components that handle auth themselves
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; secure";
       }
       
